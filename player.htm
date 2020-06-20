@@ -1,0 +1,170 @@
+<html>
+    <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <title>Podcast Player</title>
+        <style>
+            body {
+                text-align:center;
+            }
+            #player audio {
+                margin-left: auto;
+                margin-right: auto;
+            }
+            #note {
+                width: 80%;
+                height: 100px;
+            }
+            #insertnote {
+                width: 80%;
+                margin-top: 10px;
+            }
+            #log {
+                padding-left:10%;
+                text-align: left;
+            }
+        
+        </style>
+    </head>
+    <body style='width:100%'>
+        <h2>Super Duper podcast player:</h2>
+        <div id='loaded' style="display: none;">
+            <div id='player'></div>
+            <h2>Your note:</h2>
+            <textarea id='note'></textarea><br>
+            <button id='insertnote'>Submit note</button>
+            <h3>Events:</h3>
+            <div id='log'>
+                
+            </div>
+            <button id='share'>Download your notes this</button>
+            <br/>
+            <br/>
+                <button id='clear'>Clear all data - start new episode</button>
+            <br/>
+        </div>
+        <div id='empty'  style="display: none;">
+            <h3>Welcome to podcast player. INsert a URL of audio file:</h3>
+            <textarea id='newaudio'></textarea>
+            <br/>
+            <button id='newepisode'>Start playing</button>
+        </div>
+
+        <script>
+            function exportToCsv(filename, rows) {
+                var processRow = function (row) {
+                    var finalVal = '';
+                    for (var j = 0; j < row.length; j++) {
+                        var innerValue = row[j] === null ? '' : row[j].toString();
+                        if (row[j] instanceof Date) {
+                            innerValue = row[j].toLocaleString();
+                        };
+                        var result = innerValue.replace(/"/g, '""');
+                        if (result.search(/("|,|\n)/g) >= 0)
+                            result = '"' + result + '"';
+                        if (j > 0)
+                            finalVal += ',';
+                        finalVal += result;
+                    }
+                    return finalVal + '\n';
+                };
+
+                var csvFile = '';
+                for (var i = 0; i < rows.length; i++) {
+                    csvFile += processRow(rows[i]);
+                }
+
+                var blob = new Blob([csvFile], { type: 'text/csv;charset=utf-8;' });
+                if (navigator.msSaveBlob) { // IE 10+
+                    navigator.msSaveBlob(blob, filename);
+                } else {
+                    var link = document.createElement("a");
+                    if (link.download !== undefined) { // feature detection
+                        // Browsers that support HTML5 download attribute
+                        var url = URL.createObjectURL(blob);
+                        link.setAttribute("href", url);
+                        link.setAttribute("download", filename);
+                        link.style.visibility = 'hidden';
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                    }
+                }
+            }
+
+            document.addEventListener( 'DOMContentLoaded', function () {
+                var data;
+                const previous = localStorage.getItem( 'playbackData' );
+                if( previous ) {
+                    var prev = JSON.parse( previous );
+                    data = prev;
+                    data.notes.forEach( note => {
+                        const el = document.createElement( 'li' );
+                        el.innerText = note.time + ' : ' + note.note;
+                        document.getElementById('log').append( el );
+                    } );
+                    document.getElementById('loaded').style.display = 'block';
+                } else {
+                    document.getElementById('empty').style.display = 'block';
+                    data = {
+                        'file': '',
+                        'playback': 0,
+                        'notes': []
+                    };
+                }
+
+                var fileToPlayback = data.file;
+                if ( data.playback > 0 ) {
+                    fileToPlayback = fileToPlayback + '#t=' + data.playback;
+                }
+                const player = document.createElement('audio');
+                player.setAttribute( 'src', fileToPlayback );
+                player.setAttribute( 'preload', 'auto' );
+                player.setAttribute( 'controls', 'controls' );
+                player.setAttribute( 'title', 'Podcast Player' );
+                document.getElementById('player').appendChild( player );
+                player.load();
+                
+                function newNote( content ) {
+                    const t = player.currentTime;
+                    data.playback = t;
+                    data.notes.push( { note: content, time: t } );
+                    localStorage.setItem( 'playbackData', JSON.stringify( data ) );
+                    const el = document.createElement( 'li' );
+                    el.innerText = t + ' : ' + content;
+                    document.getElementById('log').append( el );
+                }
+                //newNote( 'Starting to listen ' + (new Date().toUTCString() ) );
+                player.addEventListener( 'pause', function( arg ) {
+                    newNote( 'transcribe' );
+                } );
+                document.getElementById('insertnote').addEventListener( 'click', function() {
+                    const note = document.getElementById('note').value;
+                    if ( note ) {
+                        newNote(note);
+                        document.getElementById('note').value = '';
+                    }
+                } );
+
+                document.querySelector('#share').addEventListener( 'click', function() {
+                    const rows = data.notes.map( (note) => ( [ note.time, note.note, data.file ] ) );
+                    exportToCsv( "podcastNotes.csv", [ [ "Seconds since start", "Note", "Audio URL" ] ].concat( rows ) );
+                } );
+                document.querySelector('#clear').addEventListener( 'click', function() {
+                    localStorage.removeItem( 'playbackData' );
+                    window.location.reload();
+                } );
+                document.querySelector('#newepisode').addEventListener( 'click', function() {
+                    data = {
+                        'file': document.querySelector('#newaudio').value,
+                        'playback': 0,
+                        'notes': []
+                    };
+                    console.log(data);
+                    localStorage.setItem( 'playbackData', JSON.stringify( data ) );
+                    window.location.reload();
+                } );
+            } );
+        </script>
+    </body>
+</html>
