@@ -8,5 +8,5 @@
         "type": "image/png"
       }
     ],
-    "display": "standalone"
+    "display": "browser"
 }
