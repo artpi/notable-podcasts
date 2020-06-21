@@ -1,0 +1,12 @@
+{
+    "name": "Notable Podcasts",
+    "short_name": "Notable Podcasts",
+    "icons": [
+      {
+        "src": "./apple-touch-icon.png",
+        "sizes": "192x192",
+        "type": "image/png"
+      }
+    ],
+    "display": "standalone"
+  }

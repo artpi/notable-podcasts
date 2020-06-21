@@ -1,11 +1,17 @@
+<!DOCTYPE html>
 <html>
     <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-        <title>Podcast Player</title>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width">
+    <link rel="manifest" href="./help-me-read.webmanifest">
+    <link rel="apple-touch-icon" sizes="192x192" href="./apple-touch-icon.png">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <title>🎧 Notable Podcasts</title>
         <style>
             body {
                 text-align:center;
+                font-family: "Trebuchet MS", Verdana;
+                padding-top: 30px;
             }
             #player audio {
                 margin-left: auto;
@@ -15,7 +21,7 @@
                 width: 80%;
                 height: 100px;
             }
-            #insertnote {
+            textarea {
                 width: 80%;
                 margin-top: 10px;
             }
@@ -23,31 +29,50 @@
                 padding-left:10%;
                 text-align: left;
             }
-        
+            #textarea {
+                border: 1px solid black;
+            }
+            button {
+                margin: 10px;
+                background-color: #e5ebee;
+                border: 1px solid black;
+                padding: 5px;
+                width: 60%
+            }
+            #log li {
+                padding-top: 3px;
+                padding-bottom: 3px;
+            }
+            #log b {
+                font-size: 0.8em;
+                font-family: sans-serif;
+            }
+
         </style>
     </head>
     <body style='width:100%'>
-        <h2>Super Duper podcast player:</h2>
+        <h2>🎧 Notable Podcasts</h2>
         <div id='loaded' style="display: none;">
             <div id='player'></div>
-            <h2>Your note:</h2>
+            <h3>Your custom note:</h3>
             <textarea id='note'></textarea><br>
             <button id='insertnote'>Submit note</button>
             <h3>Events:</h3>
             <div id='log'>
                 
             </div>
-            <button id='share'>Download your notes this</button>
+            <button id='share'>⬇️ Download your notes and timestamps to CSV</button>
             <br/>
             <br/>
-                <button id='clear'>Clear all data - start new episode</button>
+                <button id='clear'>💥 Clear all data - start new episode</button>
             <br/>
         </div>
         <div id='empty'  style="display: none;">
-            <h3>Welcome to podcast player. INsert a URL of audio file:</h3>
+            <p>Welcome to notable podcasts. Insert an audio file URL to start playing:</p>
             <textarea id='newaudio'></textarea>
             <br/>
-            <button id='newepisode'>Start playing</button>
+            <button id='newepisode'>🎵 Start playing</button>
+            <p>⬆️ <i>Add to Home Screen to work like an App</i></p>
         </div>
 
         <script>
@@ -92,17 +117,30 @@
                 }
             }
 
+            function note2log( note ) {
+                const originalSeconds = Math.floor( note.time );
+                let seconds = originalSeconds % 60;
+                const originalMinutes = ( originalSeconds - seconds ) / 60;
+                let minutes = originalMinutes % 60;
+                const hours = ( originalMinutes - minutes ) / 60;
+                let printtime = '';
+                const time = [
+                    hours,
+                    minutes,
+                    seconds,
+                ].map( t => ( ( t< 10 ) ? '0' + t : t ) ).join(':');
+                console.log(time);
+                const el = document.createElement( 'li' );
+                el.innerHTML = '<b>' + time + '</b> : ' + note.note;
+                document.getElementById('log').append( el );
+            }
             document.addEventListener( 'DOMContentLoaded', function () {
                 var data;
                 const previous = localStorage.getItem( 'playbackData' );
                 if( previous ) {
                     var prev = JSON.parse( previous );
                     data = prev;
-                    data.notes.forEach( note => {
-                        const el = document.createElement( 'li' );
-                        el.innerText = note.time + ' : ' + note.note;
-                        document.getElementById('log').append( el );
-                    } );
+                    data.notes.forEach( note2log );
                     document.getElementById('loaded').style.display = 'block';
                 } else {
                     document.getElementById('empty').style.display = 'block';
@@ -121,7 +159,7 @@
                 player.setAttribute( 'src', fileToPlayback );
                 player.setAttribute( 'preload', 'auto' );
                 player.setAttribute( 'controls', 'controls' );
-                player.setAttribute( 'title', 'Podcast Player' );
+                player.setAttribute( 'title', 'Notable Podcasts' );
                 document.getElementById('player').appendChild( player );
                 player.load();
                 
@@ -130,9 +168,7 @@
                     data.playback = t;
                     data.notes.push( { note: content, time: t } );
                     localStorage.setItem( 'playbackData', JSON.stringify( data ) );
-                    const el = document.createElement( 'li' );
-                    el.innerText = t + ' : ' + content;
-                    document.getElementById('log').append( el );
+                    note2log( { note: content, time: t } );
                 }
                 //newNote( 'Starting to listen ' + (new Date().toUTCString() ) );
                 player.addEventListener( 'pause', function( arg ) {
