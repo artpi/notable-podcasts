@@ -74,7 +74,7 @@
             <button id='newepisode'>🎵 Start playing</button>
             <p>⬆️ <i>Add to Home Screen to work like an App</i></p>
         </div>
-
+        <script src='assets/localforage.nopromises.min.js' type="text/javascript"></script>
         <script>
             function exportToCsv(filename, rows) {
                 var processRow = function (row) {
@@ -136,44 +136,64 @@
             }
             document.addEventListener( 'DOMContentLoaded', function () {
                 var data;
-                const previous = localStorage.getItem( 'playbackData' );
-                if( previous ) {
-                    var prev = JSON.parse( previous );
-                    data = prev;
-                    data.notes.forEach( note2log );
-                    document.getElementById('loaded').style.display = 'block';
-                } else {
-                    document.getElementById('empty').style.display = 'block';
-                    data = {
-                        'file': '',
-                        'playback': 0,
-                        'notes': []
-                    };
+                let player;
+                localforage.getItem( 'playbackData' ).then( dataReady );
+
+                function dataReady( previous ) {
+                    if( previous ) {
+                        data = previous;
+                        data.notes.forEach( note2log );
+                        document.getElementById('loaded').style.display = 'block';
+                    } else {
+                        document.getElementById('empty').style.display = 'block';
+                        data = {
+                            'file': '',
+                            'playback': 0,
+                            'notes': []
+                        };
+                    }
+                    localforage.getItem('audiocache').then(function(value) {
+                        if( value ) {
+                            console.log( value );
+                            console.log( 'audio cache' );
+                            var url = URL.createObjectURL( value );
+                            var fileToPlayback = url;
+                            
+                            player = document.createElement('audio');
+                            player.setAttribute( 'src', fileToPlayback );
+                            // player.srcObject = value;
+                            player.setAttribute( 'preload', 'auto' );
+                            player.setAttribute( 'controls', 'controls' );
+                            player.setAttribute( 'title', 'Notable Podcasts' );
+                            document.getElementById('player').appendChild( player );
+                            if ( data.playback > 0 ) {
+                                function scrollToTime() {
+                                    this.currentTime = Math.floor( data.playback );
+                                    player.removeEventListener('canplaythrough', scrollToTime );
+                                }
+                                player.addEventListener('canplaythrough', scrollToTime );
+                            }
+                            player.load();
+                            player.addEventListener( 'pause', function( arg ) {
+                                newNote( 'pause' );
+                            } );
+
+                        }
+
+                    }).catch(function(err) {
+                        console.log(err);
+                    });
                 }
 
-                var fileToPlayback = data.file;
-                if ( data.playback > 0 ) {
-                    fileToPlayback = fileToPlayback + '#t=' + data.playback;
-                }
-                const player = document.createElement('audio');
-                player.setAttribute( 'src', fileToPlayback );
-                player.setAttribute( 'preload', 'auto' );
-                player.setAttribute( 'controls', 'controls' );
-                player.setAttribute( 'title', 'Notable Podcasts' );
-                document.getElementById('player').appendChild( player );
-                player.load();
                 
                 function newNote( content ) {
                     const t = player.currentTime;
                     data.playback = t;
                     data.notes.push( { note: content, time: t } );
-                    localStorage.setItem( 'playbackData', JSON.stringify( data ) );
+                    localforage.setItem( 'playbackData', data );
                     note2log( { note: content, time: t } );
                 }
-                //newNote( 'Starting to listen ' + (new Date().toUTCString() ) );
-                player.addEventListener( 'pause', function( arg ) {
-                    newNote( 'transcribe' );
-                } );
+
                 document.getElementById('insertnote').addEventListener( 'click', function() {
                     const note = document.getElementById('note').value;
                     if ( note ) {
@@ -187,18 +207,33 @@
                     exportToCsv( "podcastNotes.csv", [ [ "Seconds since start", "Note", "Audio URL" ] ].concat( rows ) );
                 } );
                 document.querySelector('#clear').addEventListener( 'click', function() {
-                    localStorage.removeItem( 'playbackData' );
+                    localforage.removeItem( 'playbackData' );
+                    localforage.removeItem( 'audiocache' )
                     window.location.reload();
                 } );
                 document.querySelector('#newepisode').addEventListener( 'click', function() {
-                    data = {
-                        'file': document.querySelector('#newaudio').value,
-                        'playback': 0,
-                        'notes': []
-                    };
-                    console.log(data);
-                    localStorage.setItem( 'playbackData', JSON.stringify( data ) );
-                    window.location.reload();
+                    const url = document.querySelector('#newaudio').value;
+                    console.log( 'downloading', url );
+                    const request = new XMLHttpRequest();
+                    request.responseType = 'blob';
+                    request.onreadystatechange = function() {
+                        console.log( request );
+                        if (request.readyState === 4 && request.status === 200){
+                            localforage.setItem( 'audiocache', request.response ).then( function( savedAudioBlob ) {
+                                console.log('Saved Blob URL ' + savedAudioBlob);
+                                data = {
+                                    'file': document.querySelector('#newaudio').value,
+                                    'playback': 0,
+                                    'notes': []
+                                };
+                                console.log(data);
+                                localforage.setItem( 'playbackData', data );
+                                window.location.reload();
+                            } );
+                        }
+                    }
+                    request.open( 'GET', url, true )
+                    request.send();
                 } );
             } );
         </script>
