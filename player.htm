@@ -9,15 +9,21 @@
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
         <title>🎧 Notable Podcasts</title>
         <style>
+            html {
+                height:100%;
+            }
             body {
                 text-align:center;
-                font-family: "Trebuchet MS", Verdana;
+                font-family: Helvetica, "Trebuchet MS", Verdana;
                 height: 100%;
                 width:100%;
                 overflow: hidden;
+                padding: 0;
+                margin: 0;
             }
             h2 {
-                margin-top: 30px;
+                padding-top: 20px;
+                padding-bottom: 20px;
             }
             #player audio {
                 margin-left: auto;
@@ -43,7 +49,6 @@
                 background-color: #e5ebee;
                 border: 1px solid black;
                 padding: 5px;
-                width: 60%
             }
             #log li {
                 padding-top: 3px;
@@ -54,26 +59,66 @@
                 font-family: sans-serif;
             }
 
+            #menu {
+                padding-left: 20px;
+                padding-right: 20px;
+                background-color: #bdd4e7;
+                background-image: linear-gradient(180deg, #bdd4e7 0%, #8693ab 74%);
+            }
+            #menu button {
+                margin: 10px;
+                border: 1px solid black;
+                padding: 5px;
+                width: 5em;
+                height: 5em;
+            }
+            #menu button strong {
+                display: block;
+                text-align: center;
+                font-size: 22px;
+            }
+            #menu button span {
+                font-size: 10px;
+                line-height: 11px;
+            }
+
+            #player audio {
+                width: 90%;
+                margin-top: 20px;
+                margin-bottom: 20px;
+            }
+
         </style>
     </head>
     <body style='width:100%'>
-        <h2>🎧 Notable Podcasts</h2>
-        <div id='loaded' style="display: none;">
-            <div id='player'></div>
-            <h3>Your custom note:</h3>
-            <textarea id='note'></textarea><br>
-            <button id='insertnote'>Submit note</button>
-            <button id='share'>⬇️ Download your notes and timestamps to CSV</button>
-            <br/>
-            <br/>
-                <button id='clear'>💥 Clear all data - start new episode</button>
-            <br/>
-            <h3>Events:</h3>
-            <div id='log'>
-                
+        <div id='loaded' style="display: none; height: 100%;flex:1">
+            <div style='display:flex; flex-direction: column; height: 100%; justify-content: space-between;'>
+                <div style="flex:2; justify-items: start;">
+                    <h2>🎧 Notable Podcasts</h2>
+                    <div id='player'></div>
+                    <div>
+                        <h4>Type your insight</h4>:</h3>
+                        <textarea id='note'></textarea><br>
+                        <button id='insertnote'>Submit note</button>
+                    </div>
+                </div>
+
+                <div style="flex:2; overflow-y: scroll; flex-grow: 2;">
+                    <h3>Your notes:</h3>
+                    <div id='log'>
+        
+                    </div>
+                </div>
+
+                <div id='menu' style='flex-direction: row; flex: 1'>
+                    <button id='share'><strong>⬇️</strong><span>Save notes</span></button>
+                    <button id='clear'><strong>💥</strong><span>Clear data</span></button>
+                    <button id='customplay'><strong>⏯</strong><span>Play/Pause</span></button>
+                </div>
             </div>
         </div>
         <div id='empty'  style="display: none;">
+            <h2>🎧 Notable Podcasts</h2>
             <p>Welcome to notable podcasts. Insert an audio file URL to start playing:</p>
             <textarea id='newaudio'></textarea>
             <input type="file" id="file" name="file" />
@@ -213,10 +258,15 @@
                     const rows = data.notes.map( (note) => ( [ note.time, note.note, data.file ] ) );
                     exportToCsv( "podcastNotes.csv", [ [ "Seconds since start", "Note", "Audio URL" ] ].concat( rows ) );
                 } );
+                document.querySelector('#customplay').addEventListener( 'click', function() {
+                    return player.paused ? player.play() : player.pause();
+                } );
                 document.querySelector('#clear').addEventListener( 'click', function() {
-                    localforage.removeItem( 'playbackData' );
-                    localforage.removeItem( 'audiocache' )
-                    window.location.reload();
+                    if ( window.confirm( "Do you want to clear this episode's data? You will loose your notes." ) ) {
+                        localforage.removeItem( 'playbackData' );
+                        localforage.removeItem( 'audiocache' )
+                        window.location.reload();
+                    }
                 } );
                 document.querySelector('#newepisode').addEventListener( 'click', function() {
                     const url = document.querySelector('#newaudio').value;
