@@ -76,6 +76,7 @@
         <div id='empty'  style="display: none;">
             <p>Welcome to notable podcasts. Insert an audio file URL to start playing:</p>
             <textarea id='newaudio'></textarea>
+            <input type="file" id="file" name="file" />
             <br/>
             <button id='newepisode'>🎵 Start playing</button>
             <p>⬆️ <i>Add to Home Screen to work like an App</i></p>
@@ -241,6 +242,35 @@
                     request.open( 'GET', url, true )
                     request.send();
                 } );
+                document.getElementById('file').addEventListener('change', function( evt ) {
+                    const theFile = evt.target.files[0];
+                    console.log( "Uploading", theFile );
+                    var reader = new FileReader();
+                    // Closure to capture the file information.
+                    reader.onload = function( e ) {
+                        console.log(event);
+                        var fileString = new Blob([e.target.result]);
+
+                        console.log( fileString );
+                        localforage.setItem( 'audiocache', fileString ).then( function( savedAudioBlob ) {
+                            //console.log('Saved Blob URL ' + savedAudioBlob);
+                            data = {
+                                'file': theFile.name,
+                                'playback': 0,
+                                'notes': []
+                            };
+                            console.log(data);
+                            localforage.setItem( 'playbackData', data );
+                            window.location.reload();
+                        } ).catch( function( err, plop ) {
+                            console.log( err, plop );
+                        }  );
+
+                    }
+                    // Read in the image file as a data URL.
+                    reader.readAsArrayBuffer( theFile );
+                }, false);
+
             } );
         </script>
         <script>
