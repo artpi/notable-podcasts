@@ -405,20 +405,20 @@
                 if ( window.location.hash === '#powermode' ) {
                     document.querySelector('#playnotes').style.display = 'inline';
                     document.querySelector('#playnotes').addEventListener( 'click', function() {
-                        alert( 'Start the transcription app  and manually press play IN THE PLAYER (not the button at the bottom).' );
+                        //alert( 'Start the transcription app  and manually press play IN THE PLAYER (not the button at the bottom).' );
                         player.logging = false;
                         player.pause();
                         const startTime = player.getTime();
-                        let chain = new Promise( ( resolve, reject ) => {
-                            player.startedPlaying = function() {
-                                // window.setTimeout( function() {
-                                    player.pause();
-                                    player.startedPlaying = function() {};
-                                    resolve();
-                                // }, 1000 );
-                            }
-                        } );
-                        chain = chain.then( () => speak( 'Saved notes: ' ) );
+                        // let chain = new Promise( ( resolve, reject ) => {
+                        //     player.startedPlaying = function() {
+                        //         // window.setTimeout( function() {
+                        //             player.pause();
+                        //             player.startedPlaying = function() {};
+                        //             resolve();
+                        //         // }, 1000 );
+                        //     }
+                        // } );
+                        let chain = speak( 'Saved notes: ' );
                         player.data.notes.forEach( note => {
                             chain = chain.then( () => new Promise( ( resolve, reject ) => window.setTimeout( resolve, 3 * 1000 ) ) );
                             chain = chain.then( () => speak( 'Clip from ' + sec2time( note.time ) + ': ' ) );
