@@ -25,6 +25,10 @@
                 padding-top: 20px;
                 padding-bottom: 20px;
             }
+            body.yt h2 {
+                padding-top: 5px;
+                padding-bottom: 5px;
+            }
             #player audio {
                 margin-left: auto;
                 margin-right: auto;
@@ -200,23 +204,33 @@
                 localforage.getItem( 'playbackData' ).then( dataReady );
 
                 function initializeYoutube( data ) {
-                var tag = document.createElement('script');
-                tag.src = "https://www.youtube.com/iframe_api";
-                var firstScriptTag = document.getElementsByTagName('script')[0];
-                firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+                    var tag = document.createElement('script');
+                    tag.src = "https://www.youtube.com/iframe_api";
+                    var firstScriptTag = document.getElementsByTagName('script')[0];
+                    firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
 
-                // 3. This function creates an <iframe> (and YouTube player)
-                //    after the API code downloads.
-                window.onYouTubeIframeAPIReady = function () {
-                    player = new YT.Player('player', {
-                        height: '20%',
-                        width: '100%',
-                        videoId: data.youtube,
-                        events: {
-                        'onReady': onPlayerReady,
-                        'onStateChange': onPlayerStateChange
-                        }
-                    });
+                    // 3. This function creates an <iframe> (and YouTube player)
+                    //    after the API code downloads.
+                    let width = window.innerWidth;
+                    if ( width > 800 ) {
+                        width = 800;
+                    }
+                    let height = ( width/16 )*9
+                    document.getElementById( 'player' ).style.width = width + 'px';
+                    document.getElementById( 'player' ).style.height = height + 'px';
+                    document.getElementById( 'player' ).style.backgroundColor = 'black';
+                    document.body.className = 'yt';
+
+                    window.onYouTubeIframeAPIReady = function () {
+                        player = new YT.Player('player', {
+                            height: Math.floor( height ) + 'px',
+                            width: Math.floor( width ) + 'px',
+                            videoId: data.youtube,
+                            events: {
+                                'onReady': onPlayerReady,
+                                'onStateChange': onPlayerStateChange
+                            }
+                        });
                     }
                     console.log( player );
                     // 4. The API will call this function when the video player is ready.
