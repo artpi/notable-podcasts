@@ -387,8 +387,6 @@
                     } );
                 }
                 
-                window.playClip = playClip;
-
                 document.getElementById('insertnote').addEventListener( 'click', function() {
                     const note = document.getElementById('note').value;
                     if ( note ) {
@@ -413,18 +411,18 @@
                         const startTime = player.getTime();
                         let chain = new Promise( ( resolve, reject ) => {
                             player.startedPlaying = function() {
-                                window.setTimeout( function() {
+                                // window.setTimeout( function() {
                                     player.pause();
-                                    player.startedPlaying = () => {};
+                                    player.startedPlaying = function() {};
                                     resolve();
-                                }, 1000 );
+                                // }, 1000 );
                             }
                         } );
                         chain = chain.then( () => speak( 'Saved notes: ' ) );
                         player.data.notes.forEach( note => {
-                            chain = chain.then( () => new Promise( ( resolve, reject ) => window.setTimeout( resolve, 5 * 1000 ) ) );
+                            chain = chain.then( () => new Promise( ( resolve, reject ) => window.setTimeout( resolve, 3 * 1000 ) ) );
                             chain = chain.then( () => speak( 'Clip from ' + sec2time( note.time ) + ': ' ) );
-                            chain = chain.then( () => new Promise( ( resolve, reject ) => window.setTimeout( resolve, 2 * 1000 ) ) );
+                            chain = chain.then( () => new Promise( ( resolve, reject ) => window.setTimeout( resolve, 1.5 * 1000 ) ) );
                             chain = chain.then( () => playClip(  Math.floor( note.time )-5, 20 ) );
                         } );
                         chain.then( () => {
