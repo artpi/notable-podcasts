@@ -211,6 +211,9 @@
                     player.element.currentTime = Math.floor( t );
                 },
                 newNote: function( content ) {
+                    if ( ! this.logging ) {
+                        return;
+                    }
                     const time = player.getTime();
                     player.data.playback = time;
                     player.data.notes.push( { note: 'pause', time: time } );
@@ -220,6 +223,7 @@
                 play: () => {},
                 pause: () => {},
                 isPlaying: () => {},
+                startedPlaying: () => {}
             };
 
             document.addEventListener( 'DOMContentLoaded', function () {
@@ -278,6 +282,8 @@
                     function onPlayerStateChange(event) {
                         if ( event.data == YT.PlayerState.PAUSED ) {
                             player.newNote( 'pause' );
+                        } else if ( event.data === 1 && player.startedPlaying ) {
+                            player.startedPlaying();
                         }
                     }
                 }
@@ -321,6 +327,11 @@
                             player.element.load();
                             player.element.addEventListener( 'pause', function( arg ) {
                                 player.newNote( 'pause' );
+                            } );
+                            player.element.addEventListener( 'play', function( arg ) {
+                                if( player.startedPlaying ) {
+                                    player.startedPlaying();
+                                }
                             } );
                             player.pause = function() {
                                 player.element.pause();
@@ -368,11 +379,9 @@
                 function playClip( time, duration ){
                     player.toTime( Math.floor( time ) );
                     return new Promise( function( resolve, reject ) {
-                        player.logging = false;
                         player.play();
                         window.setTimeout( function() {
                             player.pause();
-                            player.logging = true;
                             resolve();
                         }, duration*1000 );
                     } );
@@ -397,14 +406,25 @@
                 } );
                 if ( window.location.hash === '#powermode' ) {
                     document.querySelector('#playnotes').style.display = 'inline';
+                    alert( 'Start the transcription app  and manually press play IN THE PLAYER (not the button at the bottom).' );
                     document.querySelector('#playnotes').addEventListener( 'click', function() {
                         player.logging = false;
                         player.pause();
                         const startTime = player.getTime();
-                        player.logging = true;
-                        let chain = speak( 'My notes from podcast: ' );
+                        let chain = new Promise( ( resolve, reject ) => {
+                            player.startedPlaying = function() {
+                                window.setTimeout( function() {
+                                    player.pause();
+                                    player.startedPlaying = () => {};
+                                    resolve();
+                                }, 1000 );
+                            }
+                        } );
+                        chain = chain.then( () => speak( 'Saved notes: ' ) );
                         player.data.notes.forEach( note => {
-                            chain = chain.then( () => speak( 'Note at time ' + sec2time( note.time ) + ' is: ' ) );
+                            chain = chain.then( () => new Promise( ( resolve, reject ) => window.setTimeout( resolve, 5 * 1000 ) ) );
+                            chain = chain.then( () => speak( 'Clip from ' + sec2time( note.time ) + ': ' ) );
+                            chain = chain.then( () => new Promise( ( resolve, reject ) => window.setTimeout( resolve, 2 * 1000 ) ) );
                             chain = chain.then( () => playClip(  Math.floor( note.time )-5, 20 ) );
                         } );
                         chain.then( () => {
