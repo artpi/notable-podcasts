@@ -406,8 +406,8 @@
                 } );
                 if ( window.location.hash === '#powermode' ) {
                     document.querySelector('#playnotes').style.display = 'inline';
-                    alert( 'Start the transcription app  and manually press play IN THE PLAYER (not the button at the bottom).' );
                     document.querySelector('#playnotes').addEventListener( 'click', function() {
+                        alert( 'Start the transcription app  and manually press play IN THE PLAYER (not the button at the bottom).' );
                         player.logging = false;
                         player.pause();
                         const startTime = player.getTime();
