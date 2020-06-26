@@ -195,12 +195,34 @@
                 el.innerHTML = '<b>' + time + '</b> : ' + note.note;
                 document.getElementById('log').append( el );
             }
-
+            const player = {
+                element: null,
+                logging: true,
+                data: {
+                    'file': '',
+                    'youtube': null,
+                    'playback': 0,
+                    'notes': []
+                },
+                getTime: function() {
+                    return 0;
+                },
+                toTime: function( t ) {
+                    player.element.currentTime = Math.floor( t );
+                },
+                newNote: function( content ) {
+                    const time = player.getTime();
+                    player.data.playback = time;
+                    player.data.notes.push( { note: 'pause', time: time } );
+                    localforage.setItem( 'playbackData', player.data );
+                    note2log( { note: 'pause', time: time } );
+                },
+                play: () => {},
+                pause: () => {},
+                isPlaying: () => {},
+            };
 
             document.addEventListener( 'DOMContentLoaded', function () {
-                var data;
-                let player;
-                let logging = true;
                 localforage.getItem( 'playbackData' ).then( dataReady );
 
                 function initializeYoutube( data ) {
@@ -222,7 +244,7 @@
                     document.body.className = 'yt';
 
                     window.onYouTubeIframeAPIReady = function () {
-                        player = new YT.Player('player', {
+                        player.element = new YT.Player('player', {
                             height: Math.floor( height ) + 'px',
                             width: Math.floor( width ) + 'px',
                             videoId: data.youtube,
@@ -232,72 +254,86 @@
                             }
                         });
                     }
-                    console.log( player );
+                    player.getTime = function() {
+                        return player.element.getCurrentTime();
+                    }
+                    player.play = function () {
+                        return player.element.playVideo();
+                    }
+                    player.pause = function () {
+                        return player.element.pauseVideo();
+                    }
+                    player.toTime = function ( time ) {
+                        return player.element.seekTo( time );
+                    }
+                    player.isPlaying = function () {
+                        return player.element.getPlayerState() === 1;
+                    }
                     // 4. The API will call this function when the video player is ready.
-                    function onPlayerReady(event) {
+                    function onPlayerReady( event ) {
                         //event.target.playVideo();
+                        player.toTime( player.data.playback );
                     }
 
-                    // 5. The API calls this function when the player's state changes.
-                    //    The function indicates that when playing a video (state=1),
-                    //    the player should play for six seconds and then stop.
-                    var done = false;
                     function onPlayerStateChange(event) {
-                        if (event.data == YT.PlayerState.PAUSED ) {
-                            const time = player.getCurrentTime();
-                            data.playback = time;
-                            data.notes.push( { note: 'pause', time: time } );
-                            localforage.setItem( 'playbackData', data );
-                            note2log( { note: 'pause', time: time } );
+                        if ( event.data == YT.PlayerState.PAUSED ) {
+                            player.newNote( 'pause' );
                         }
                     }
                 }
 
                 function dataReady( previous ) {
                     if( previous ) {
-                        data = previous;
-                        data.notes.forEach( note2log );
+                        player.data = previous;
+                        player.data.notes.forEach( note2log );
                         document.getElementById('loaded').style.display = 'block';
                     } else {
                         document.getElementById('empty').style.display = 'block';
-                        data = {
-                            'file': '',
-                            'playback': 0,
-                            'notes': []
-                        };
                     }
 
-                    if ( data.youtube ) {
-                        initializeYoutube( data );
+                    if ( player.data.youtube ) {
+                        initializeYoutube( player.data );
                         return;
                     }
                     localforage.getItem('audiocache').then(function(value) {
                         if( value ) {
-                            console.log( value );
                             console.log( 'audio cache' );
                             var url = URL.createObjectURL( value );
                             var fileToPlayback = url;
                             
-                            player = document.createElement('audio');
-                            player.setAttribute( 'src', fileToPlayback );
-                            // player.srcObject = value;
-                            player.setAttribute( 'preload', 'auto' );
-                            player.setAttribute( 'controls', 'controls' );
-                            player.setAttribute( 'title', 'Notable Podcasts' );
-                            document.getElementById('player').appendChild( player );
-                            if ( data.playback > 0 ) {
-                                function scrollToTime() {
-                                    this.currentTime = Math.floor( data.playback );
-                                    player.removeEventListener('canplaythrough', scrollToTime );
-                                }
-                                player.addEventListener('canplaythrough', scrollToTime );
+                            player.element = document.createElement('audio');
+                            player.element.setAttribute( 'src', fileToPlayback );
+                            // player.element.srcObject = value;
+                            player.element.setAttribute( 'preload', 'auto' );
+                            player.element.setAttribute( 'controls', 'controls' );
+                            player.element.setAttribute( 'title', 'Notable Podcasts' );
+                            document.getElementById('player').appendChild( player.element );
+                            player.toTime = function( t ) {
+                                player.element.currentTime = Math.floor( t );
                             }
-                            player.load();
-                            player.addEventListener( 'pause', function( arg ) {
-                                if ( logging ) {
-                                    newNote( 'pause' );
+                            if ( player.data.playback > 0 ) {
+                                function scrollToTime() {
+                                    player.toTime( Math.floor( player.data.playback ) );
+                                    player.element.removeEventListener('canplaythrough', scrollToTime );
                                 }
+                                player.element.addEventListener('canplaythrough', scrollToTime );
+                            }
+                            player.element.load();
+                            player.element.addEventListener( 'pause', function( arg ) {
+                                player.newNote( 'pause' );
                             } );
+                            player.pause = function() {
+                                player.element.pause();
+                            }
+                            player.play = function() {
+                                player.element.play();
+                            }
+                            player.isPlaying = function() {
+                                return ! player.element.paused;
+                            }
+                            player.getTime = function() {
+                                return player.element.currentTime;
+                            }
 
                         }
 
@@ -306,16 +342,8 @@
                     });
                 }
                 
-                function newNote( content ) {
-                    const t = player.currentTime;
-                    data.playback = t;
-                    data.notes.push( { note: content, time: t } );
-                    localforage.setItem( 'playbackData', data );
-                    note2log( { note: content, time: t } );
-                }
 
                 var synth = window.speechSynthesis;
-
                 function speak( text ){
                     
                     voices = synth.getVoices().filter( function( v ) {
@@ -338,13 +366,13 @@
                 }
 
                 function playClip( time, duration ){
-                    player.currentTime = Math.floor( time );
+                    player.toTime( Math.floor( time ) );
                     return new Promise( function( resolve, reject ) {
-                        logging = false;
+                        player.logging = false;
                         player.play();
                         window.setTimeout( function() {
                             player.pause();
-                            logging = true;
+                            player.logging = true;
                             resolve();
                         }, duration*1000 );
                     } );
@@ -355,37 +383,33 @@
                 document.getElementById('insertnote').addEventListener( 'click', function() {
                     const note = document.getElementById('note').value;
                     if ( note ) {
-                        newNote(note);
+                        player.newNote(note);
                         document.getElementById('note').value = '';
                     }
                 } );
 
                 document.querySelector('#share').addEventListener( 'click', function() {
-                    const rows = data.notes.map( (note) => ( [ note.time, note.note, data.file ] ) );
+                    const rows = data.notes.map( (note) => ( [ note.time, note.note, player.data.file ? player.data.file : player.data.youtube ] ) );
                     exportToCsv( "podcastNotes.csv", [ [ "Seconds since start", "Note", "Audio URL" ] ].concat( rows ) );
                 } );
                 document.querySelector('#customplay').addEventListener( 'click', function() {
-                    if( data.youtube ) {
-                        return player.getPlayerState() === 1 ? player.pauseVideo() : player.playVideo();
-                    } else if ( data.file ) {
-                        return player.paused ? player.play() : player.pause();
-                    }
+                    return player.isPlaying() ? player.pause() : player.play();
                 } );
                 if ( window.location.hash === '#powermode' ) {
                     document.querySelector('#playnotes').style.display = 'inline';
                     document.querySelector('#playnotes').addEventListener( 'click', function() {
-                        logging = false;
+                        player.logging = false;
                         player.pause();
-                        const startTime = player.currentTime;
-                        logging = true;
+                        const startTime = player.getTime();
+                        player.logging = true;
                         let chain = speak( 'My notes from podcast: ' );
-                        data.notes.forEach( note => {
+                        player.data.notes.forEach( note => {
                             chain = chain.then( () => speak( 'Note at time ' + sec2time( note.time ) + ' is: ' ) );
                             chain = chain.then( () => playClip(  Math.floor( note.time )-5, 20 ) );
                         } );
                         chain.then( () => {
-                            player.currentTime = startTime;
-                            logging = true;
+                            player.toTime( startTime );
+                            player.logging = true;
                         } );
                     } );
                 }
@@ -397,19 +421,34 @@
                         window.location.reload();
                     }
                 } );
+                function setData( data ) {
+                    data.playback = 0;
+                    data.notes = [];
+                    console.log(data);
+                    localforage.setItem( 'playbackData', data );
+                    window.location.reload();
+
+                };
                 document.querySelector('#newepisode').addEventListener( 'click', function() {
                     const url = document.querySelector('#newaudio').value;
-                    if ( found = url.match( /https:\/\/www.youtube.com\/watch\?v=([a-zA-Z0-9]+)/ ) ) {
-                        data = {
-                                'youtube': found[1],
-                                'playback': 0,
-                                'notes': []
-                            };
-                            console.log(data);
-                            localforage.setItem( 'playbackData', data );
-                            window.location.reload();
-                            return;
+                    if (
+                        found = url.match( /https:\/\/www.youtube.com\/watch\?v=([a-zA-Z0-9]+)/ )
+                    ) {
+                        setData( {
+                            'youtube': found[1]
+                        } );
+                        return;
                     }
+                    if (
+                        found = url.match( /https:\/\/youtu.be\/([a-zA-Z0-9]+)/ )
+                    ) {
+                        setData( {
+                            'youtube': found[1]
+                        } );
+                        return;
+                    }
+
+
                     if( url.indexOf('.mp3') === -1 ) {
                         document.getElementById('feedback').innerText='Please provide an .mp3 file url';
                         return;
