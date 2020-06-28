@@ -216,9 +216,9 @@
                     }
                     const time = player.getTime();
                     player.data.playback = time;
-                    player.data.notes.push( { note: 'pause', time: time } );
+                    player.data.notes.push( { note: content, time: time } );
                     localforage.setItem( 'playbackData', player.data );
-                    note2log( { note: 'pause', time: time } );
+                    note2log( { note: content, time: time } );
                 },
                 play: () => {},
                 pause: () => {},
