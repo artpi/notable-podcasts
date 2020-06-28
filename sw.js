@@ -1,4 +1,4 @@
-const currentVersion = 'app-v35';
+const currentVersion = 'app-v36';
 
 self.addEventListener('install', function (e) {
   e.waitUntil(
