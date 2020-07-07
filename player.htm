@@ -396,7 +396,7 @@
                 } );
 
                 document.querySelector('#share').addEventListener( 'click', function() {
-                    const rows = data.notes.map( (note) => ( [ note.time, note.note, player.data.file ? player.data.file : player.data.youtube ] ) );
+                    const rows = player.data.notes.map( (note) => ( [ sec2time( note.time ), note.note, player.data.file ? player.data.file : 'https://www.youtube.com/watch?v=' + player.data.youtube + '&t=' + ( Math.floor( note.time ) - 10 ) ] ) );
                     exportToCsv( "podcastNotes.csv", [ [ "Seconds since start", "Note", "Audio URL" ] ].concat( rows ) );
                 } );
                 document.querySelector('#customplay').addEventListener( 'click', function() {
