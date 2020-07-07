@@ -126,6 +126,9 @@
                 <input type='url' id='newaudio'>
                 <button id='newepisode'>⏯ Download</button>
             </div>
+            <div id='podcasts'>
+
+            </div>
             <div id='feedback' style='font-style:italic;color:red;padding:10px'>
             </div>
             
@@ -287,6 +290,31 @@
                         }
                     }
                 }
+                function chooseEpisode( episode ) {
+                    downloadEpisode( episode.audio );
+                }
+                function choosePodcast( pod ) {
+                    const container = document.getElementById( 'podcasts' );
+                    container.innerHTML = "";
+                    fetch( './data/' + pod.file )
+                    .then( response => response.json() )
+                    .then( data => data.forEach( episode => {
+                        const el = document.createElement( 'div' );
+                        el.innerHTML = "<h5>" + episode.title + "</h5>";
+                        document.getElementById( 'podcasts' ).appendChild( el );
+                        el.addEventListener( 'click', () => chooseEpisode( episode ) );
+                    }) );
+                }
+                function loadEpisodes() {
+                    fetch( './data/feeds.json' )
+                    .then( response => response.json() )
+                    .then( data => data.forEach( feed => {
+                        const pod = document.createElement( 'div' );
+                        pod.innerHTML = "<h4>" + feed.title + "</h4>";
+                        document.getElementById( 'podcasts' ).appendChild( pod );
+                        pod.addEventListener( 'click', () => choosePodcast( feed ) );
+                    }) );
+                }
 
                 function dataReady( previous ) {
                     if( previous ) {
@@ -295,6 +323,7 @@
                         document.getElementById('loaded').style.display = 'block';
                     } else {
                         document.getElementById('empty').style.display = 'block';
+                        loadEpisodes();
                     }
 
                     if ( player.data.youtube ) {
@@ -471,6 +500,10 @@
                         document.getElementById('feedback').innerText='Please provide an .mp3 file url';
                         return;
                     }
+                    downloadEpisode( url );
+                } );
+
+                function downloadEpisode( url ) {
                     console.log( 'downloading', url );
                     const request = new XMLHttpRequest();
                     request.responseType = 'blob';
@@ -480,14 +513,14 @@
                             localforage.setItem( 'audiocache', request.response ).then( function( savedAudioBlob ) {
                                 console.log('Saved Blob URL ' + savedAudioBlob);
                                 data = {
-                                    'file': document.querySelector('#newaudio').value,
+                                    'file': url,
                                     'playback': 0,
                                     'notes': []
                                 };
                                 console.log(data);
                                 localforage.setItem( 'playbackData', data );
                                 window.location.reload();
-                            } );
+                            } ).catch( err => console.log( err ) );
                         } else if( request.readyState === 4) {
                             document.getElementById('feedback').innerText='Unfortunately download failed. Please save file locally and upload from the file system.';
                             document.getElementById('feedback').innerHTML += "<a href='" + url + "'>Long press and save this file</a>";
@@ -499,7 +532,7 @@
                     }
                     request.open( 'GET', url, true )
                     request.send();
-                } );
+                }
                 document.getElementById('file').addEventListener('change', function( evt ) {
                     const theFile = evt.target.files[0];
                     console.log( "Uploading", theFile );

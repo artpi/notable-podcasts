@@ -1,0 +1,19 @@
+{
+  "name": "notable-podcasts",
+  "version": "1.0.0",
+  "description": "",
+  "main": "update-rss-feeds.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "update-feeds": "node ./update-rss-feeds.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "feedparser": "^2.2.10",
+    "node-fetch": "^2.6.0"
+  },
+  "devDependencies": {
+    "prettier": "^2.0.5"
+  }
+}

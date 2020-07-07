@@ -1,0 +1,14 @@
+[
+    {
+        "url": "https://tim.blog/category/the-tim-ferriss-show/feed/",
+        "title": "Tim Ferriss Show",
+        "file": "tim_ferriss_show.json",
+        "categories": [ "Interviews", "Business" ]
+    },
+    {
+        "url": "https://perell.libsyn.com/rss",
+        "title": "The North Star Podcast",
+        "file": "north_star_podcast.json",
+        "categories": [ "Interviews", "Business" ]
+    }
+]
