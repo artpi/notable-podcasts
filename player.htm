@@ -88,6 +88,72 @@
                 margin-bottom: 20px;
             }
 
+            #empty .url {
+                background-color:#e5ebee; width:80%;padding:10px;font-size:1.2em;margin-left:auto;margin-right:auto
+            }
+            #empty .upload {
+                background-color:#e5ebee; width:80%;padding:10px;font-size:1.2em
+            }
+            #feedback {
+                font-style:italic;color:red;padding:10px
+            }
+            #directly_upload {
+
+            }
+            .hidden {
+                display: none;
+            }
+
+            #podcasts {
+                overflow-x: scroll;
+            }
+            #podcasts>div {
+                display: flex;
+                flex-direction: row;
+                background-color: #ffbd69;
+                color: #111d5e;
+                border-top: 1px solid #111d5e;
+            } 
+            #podcasts>div>h4, #podcasts>div>h5 {
+                display: flex;
+                font-weight: normal;
+                font-size: 1.2em;
+                margin: 0;
+                text-align: left;
+                padding: 0.6em;
+
+            }
+            #podcasts>div>h3 {
+                text-align: center;
+                display: block;
+                width:100%;
+            }
+            #podcasts>div>h4 {
+                font-size: 1em;
+                width:30%;
+                background-color: #f37121;
+            }
+            #podcasts>div>h5 {
+                font-size: 0.8em;
+                width:70%;
+
+            }
+            #empty {
+                display: flex;text-align: center; flex-direction: column;height:100%;
+            }
+            h2 {
+                color: #c70039
+            }
+
+            .showother {
+                border: 1px solid #111d5e;
+                color: #111d5e;
+                font-weight: bolder;
+                display: block;
+                background-color: #c70039;
+                padding: 12px;
+            }
+
         </style>
     </head>
     <body style='width:100%'>
@@ -117,19 +183,23 @@
                 </div>
             </div>
         </div>
-        <div id='empty'  style="display: none;text-align: center;">
+        <div id='empty' class="hidden">
             <h2>🎧 Notable Podcasts</h2>
-            <p style="margin:20px">Welcome to notable podcasts! Insert an audio file URL to start playing:</p>
-            <input type="file" id="file" name="file" accept=".mp3,audio/*" style="background-color:#e5ebee; width:80%;padding:10px;font-size:1.2em"/>
-            <p>You can also paste '.mp3' url from the web or a Youtube link (https://www.youtube.com/watch?v=)</p>
-            <div style="background-color:#e5ebee; width:80%;padding:10px;font-size:1.2em;margin-left:auto;margin-right:auto">
-                <input type='url' id='newaudio'>
-                <button id='newepisode'>⏯ Download</button>
-            </div>
             <div id='podcasts'>
 
             </div>
-            <div id='feedback' style='font-style:italic;color:red;padding:10px'>
+            <a class='showother' onclick='javascript:document.getElementById("directly_upload").classList.toggle("hidden")'>Upload directly ( youtube/mp3 )</a>
+            <div id='directly_upload' class="hidden">
+                <p>You can also paste '.mp3' url from the web or a Youtube link (https://www.youtube.com/watch?v=)</p>
+                <div class='url'>
+                    <input type='url' id='newaudio'>
+                    <button id='newepisode'>⏯ Download</button>
+                </div>
+                <p>Or upload an .mp3 to start playing:</p>
+                <input type="file" id="file" name="file" accept=".mp3,audio/*" class='upload'/>
+            </div>
+
+            <div id='feedback'>
             </div>
             
         
@@ -300,7 +370,8 @@
                     .then( response => response.json() )
                     .then( data => data.forEach( episode => {
                         const el = document.createElement( 'div' );
-                        el.innerHTML = "<h5>" + episode.title + "</h5>";
+                        const t = episode.date.split('T')[0];
+                        el.innerHTML = "<h4>" + t + "</h4><h5>" + episode.title + "</h5>";
                         document.getElementById( 'podcasts' ).appendChild( el );
                         el.addEventListener( 'click', () => chooseEpisode( episode ) );
                     }) );
@@ -310,7 +381,7 @@
                     .then( response => response.json() )
                     .then( data => data.forEach( feed => {
                         const pod = document.createElement( 'div' );
-                        pod.innerHTML = "<h4>" + feed.title + "</h4>";
+                        pod.innerHTML = "<h3>" + feed.title + "</h3>";
                         document.getElementById( 'podcasts' ).appendChild( pod );
                         pod.addEventListener( 'click', () => choosePodcast( feed ) );
                     }) );
@@ -322,7 +393,7 @@
                         player.data.notes.forEach( note2log );
                         document.getElementById('loaded').style.display = 'block';
                     } else {
-                        document.getElementById('empty').style.display = 'block';
+                        document.getElementById('empty').classList.remove('hidden');
                         loadEpisodes();
                     }
 
